@@ -1,0 +1,92 @@
+plugins {
+    id 'java'
+    id 'java-library'
+    id 'application'
+}
+
+// https://docs.gradle.org/current/userguide/building_java_projects.html#sec:java_dependency_management_overview
+// Configuring the toolchain protects against problems with the project being built with different Java versions.
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+group = 'org.example'
+version = '1.0.0'
+final jar_file_name = "turbo-broccoli-java-${version}.jar"
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    project.logger.info("=== dependencies")
+    //Apache Flink dependencies
+    //These dependencies are provided, because they should not be packaged into the JAR file.
+    compileOnly "org.apache.flink:flink-java:${flinkVersion}"
+    compileOnly "org.apache.flink:flink-streaming-java:${flinkVersion}"
+
+    //runtime-web dependency is need to start web UI from IDE
+    compileOnly "org.apache.flink:flink-runtime-web:${flinkVersion}"
+
+    //queryable-state dependencies are needed for respective examples
+    implementation "org.apache.flink:flink-queryable-state-runtime:${flinkVersion}"
+    implementation "org.apache.flink:flink-queryable-state-client-java:${flinkVersion}"
+
+    // Derby for sink connector example
+    compileOnly 'org.apache.derby:derby:10.13.1.1'
+
+    implementation 'ch.qos.logback:logback-classic:1.5.6'
+    implementation 'org.slf4j:slf4j-api:2.0.13'
+
+    compileOnly 'org.projectlombok:lombok:1.18.34'
+    annotationProcessor 'org.projectlombok:lombok:1.18.34'
+
+    testImplementation platform('org.junit:junit-bom:5.10.0')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+}
+
+//https://docs.gradle.org/current/samples/sample_building_java_applications.html
+//from application plugin
+//this we need to run application using "gradle run"
+application {
+    mainClass = 'org.example.chapter1.AverageSensorReadings'
+}
+
+jar {
+    project.logger.info("=== jar")
+    enabled = true
+    archiveFileName = "${jar_file_name}"
+    manifest {
+        attributes("Implementation-Title": "Turbo-Broccoli-Java",
+                "Implementation-Version": archiveVersion,
+                "Manifest-Version": 1.0,
+                "Main-Class": "org.example.chapter1.AverageSensorReadings",
+                "Start-Class": "org.example.chapter1.AverageSensorReadings",
+                "Build-Jdk-Spec": 21
+        )
+    }
+    //Do not copy the signatures in the META-INF folder.
+    //Otherwise, this might cause SecurityExceptions when using the JAR.
+    exclude 'META-INF/*.SF', 'META-INF/*.DSA', 'META-INF/*.RSA'
+}
+
+compileJava {
+    logger.info("=== compileJava")
+    compileJava.options.encoding = "UTF-8"
+    compileTestJava.options.encoding = "UTF-8"
+    options.warnings = true
+    options.deprecation = true
+    options.release = 21
+}
+
+javadoc {
+    project.logger.info("=== javadoc")
+    options.encoding = 'UTF-8'
+}
+
+test {
+    project.logger.info("=== test")
+    useJUnitPlatform()
+}
